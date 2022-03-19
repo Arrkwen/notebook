@@ -54,16 +54,11 @@ string 是不可变的 byte 切片。因为Go中的源代码使用 utf-8 编码�
 * 在 Go 中将字符串转换为 rune 切片是一个标准操作，没有数据损坏的风险。
   字符串是处理短字节或字符序列比较好的方法。每次对字符串进行操作(例如查找替换字符串或接受子字符串)时，都会创建一个新的字符串。如果字符串非常大，例如文件内容，则效率非常低。
 
-```
-
-```
-
 ### string 中索引字符
 
 例如我们先看下面程序：
 
-```
-go
+```go
 func main() {
 
 	sample := "Hel哈"
@@ -71,7 +66,7 @@ func main() {
 		fmt.Print(sample[i], " ")
 	}
 	fmt.Println()
-	fmt.Printf("%s\t的字节长度: %d\n", sample, len(sample))
+	fmt.Prgointf("%s\t的字节长度: %d\n", sample, len(sample))
 	fmt.Printf("哈\t字符的字节长度: %d\n", utf8.RuneLen('哈'))
 	fmt.Printf("%s\t的字符长度: %d\n", sample, utf8.RuneCountInString(sample))
 }
@@ -93,18 +88,31 @@ Hel哈   的字符长度: 4
 2. 直接使用 range 操作符迭代 Unicode 字符
    也就是说对字符串进行 rang 迭代，是字符迭代，而不是字节迭代。
 
-```
-go
+```go
+
 for i, val := range s {
-		fmt.Println(s[i])       // 输出单字节的unicode值
-		fmt.Println(val)        // 输出字符的unicode值
-		fmt.Printf("%c\n", val) //输出字符
-	}
+	fmt.Println(s[i])       // 输出单字节的unicode值
+	fmt.Println(val)        // 输出字符的unicode值
+	fmt.Printf("%c\n", val) //输出字符
+}
 ```
 
 ### string的内存分配
 
 ![1647691136912.png](image/rune_string_byte/1647691136912.png)
+
+### len和sizeof
+
+```go
+
+str := "go语言"
+fmt.Println(len(str))           //len是返回字节个数8
+fmt.Println(unsafe.Sizeof(str)) // sizeof 是返回内存字节占用，而字符串的内存包括：指针+长度+实际:4+4+(1+1+3+3)=16
+fmt.Println("------")
+runeStr := []rune(str)
+fmt.Println(len(runeStr)) // 返回字符数:4
+fmt.Println(unsafe.Sizeof(runeStr))//指针+长度+内存字节:4+4+4*4=24
+```
 
 ## 关于编码的一些方法
 
