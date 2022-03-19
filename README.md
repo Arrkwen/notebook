@@ -1,0 +1,2 @@
+# notebook
+diary_note
