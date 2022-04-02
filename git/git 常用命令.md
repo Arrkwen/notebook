@@ -1,3 +1,7 @@
+网站
+
+https://backlog.com/git-tutorial/cn/intro/intro1_1.html
+
 ### 关联远程仓库
 
 > 1 git init
@@ -6,11 +10,11 @@
 >
 > 3 推送到master分支
 >
->    git add .
+> git add .
 >
->    git commit -m
+> git commit -m
 >
->    git push -u origin master
+> git push -u origin master
 
 ### 设置git提交规范
 

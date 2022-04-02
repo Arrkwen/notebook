@@ -1,6 +1,6 @@
 https://meilihao.github.io/go-database-sql-tutorial_zh-CN/accessing.html
 
-### sql.DB
+## sql.DB
 
 sql.DB 通过数据库驱动为我们提供管理底层数据库连接的打开和关闭操作.
 
@@ -9,8 +9,7 @@ sql.DB 为我们管理数据库连接池
 
 https://studygolang.com/articles/12509
 
-
-### Prepared Statement
+## Prepared Statement
 
 sql.Stmt支持预备表达式，可以用来优化SQL查询提高性能，减少SQL注入的风险, DB.Prepare()和Tx.Prepare()都提供了对于预备表达式的支持。
 
@@ -27,7 +26,7 @@ step4. mysql服务器执行sql语句,把执行结果发送给客户端.
 需要注意的点:
 使用预处理进行查询操作时,不仅在defer时需要关闭结果,而且还要关闭命令句柄,否则同样会占用连接,导致阻塞.
 
-### 事务
+## 事务
 
 事务(transaction)
 
@@ -49,6 +48,8 @@ B. 事务的ACID
 
 1. 执行失败要回滚
 2. 提交失败要回滚
+
+### 单独的事务执行
 
 ```go
 package main
@@ -113,8 +114,61 @@ func main() {
 }
 ```
 
+### 事务+prepared statement
+
+```go
+tx, err := db.Begin()
+if err != nil {
+	log.Fatal(err)
+}
+
+stmt, err := tx.Prepare("INSERT INTO foo VALUES (?)")
+if err != nil {
+	log.Fatal(err)
+}
+defer stmt.Close() // danger!
+for i := 0; i < 10; i++ {
+	_, err = stmt.Exec(i)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+err = tx.Commit()
+if err != nil {
+	tx.Rollback()
+	log.Fatal(err)
+}
+// stmt.Close() runs here!
+```
+
 ### MySQL只是插入记录，需要使用事务或者锁吗？
 
 锁：insert操作一般不像delete/update，有时候需要先锁定行(forupdate)做检查，这时候有一个显式加锁的过程，insert很少这么去锁定数据，如果需要检查一般也是用insert on duplicate update直接进行pk/uk更新就好了，所以很少有锁的逻辑在insert场景里
 
 事务：如果要保证数据的一致性，事务是必开的，比如说库存场景，已售+1，库存必然要-1，否则一定会产生销量和库存数据对不上的问题，比如业务逻辑是：库存-1，添加一条销售记录，肯定是要开启事务，但是开启事务的确会有一定的性能损耗，所以一般也是如果事务逻辑相对简单，还是业务保证数据幂等就好
+
+事务里面不用写加锁的代码，由sql去加锁
+
+### golang sql时区问题
+
+**想要把 time.Time 直接存储入库，需要开启解析时间parseTime**
+
+```
+db, err := sql.Open("mysql", "user:password@/dbname?charset=utf8mb4&parseTime=true")
+1
+```
+
+golang 程序里 time.Time 为 2018-12-24 18:00:00 CST
+转为 UTC 存储到 mysql 2018-12-24 10:00:00
+golang 从 mysql 获取解析成 time.Time 为 2018-12-24 10:00:00 UTC
+
+**以上问题可以通过设置loc=Local解决**
+
+```
+db, err := sql.Open("mysql", "user:password@/dbname?charset=utf8mb4&parseTime=true&loc=Local")
+1
+```
+
+golang 程序里 time.Time 为 2018-12-24 18:00:00 CST
+转为 UTC 存储到 mysql 2018-12-24 18:00:00
+golang 从 mysql 获取解析成 time.Time 为 2018-12-24 18:00:00 CST

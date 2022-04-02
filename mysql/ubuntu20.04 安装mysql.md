@@ -222,11 +222,16 @@ SHOW GRANTS FOR 'database_user'@'localhost';
 
 在默认情况下，MySQL 数据库仅监听本地连接。如果想让外网远程连接到数据库，我们需要修改配置文件，让 MySQL 可以监听远程固定 ip 或者监听所有远程 ip。
 
-首先打开 `mysqld.cnf` 配置文件。
+首先打开 `mysqld.cnf` 配置文件,并重启mysql
 
 ```bash
-sudo nano /etc/mysql/mysql.conf.d/mysqld.cnf
+sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf
+
+
+default-time_zone = '+8:00'   //修改时区为东八区
 ```
+
+> sudo systemctl restart mysql
 
 找到 bind - address 这一行，如下图所示。
 

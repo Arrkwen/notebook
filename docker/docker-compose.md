@@ -24,6 +24,13 @@
 
 ### 编写docker-compose.yml
 
+#### 宿主机时间和容器时间保持一致
+
+```
+volumes:
+  - /etc/timezone:/etc/timezone
+  - /etc/localtime:/etc/localtime
+```
 
 ### 启动服务
 
