@@ -62,7 +62,7 @@ TEXDIR (the main TeX directory):
 
 > sudo mkfontscale
 > sudo mkfontdir
-> sudofc-cache  -fsv
+> sudo fc-cache  -fsv
 
 7 vscode 插件
 

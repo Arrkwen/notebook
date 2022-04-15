@@ -22,6 +22,12 @@
 >
 > 查看所有创建的容器 docker container ls -a
 
+## docker 文件拷贝
+
+`docker cp file containerID:dir`
+
+`docker cp realtime-clustering-xk c6de4af75ec4:/realtime-clustering/`
+
 ## 容器无法访问宿主机mysql
 
 ### 1宿主机mysql要允许远程访问！！！

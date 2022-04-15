@@ -41,7 +41,7 @@ go build github.com/ourlang/noutil/...
 
 ## 2 参数
 
-### 2.1 -o
+### 2.1 -o 
 
 ```go
 output 指定编译输出的名称，代替默认的包名。
