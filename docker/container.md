@@ -24,9 +24,17 @@
 
 ## docker 文件拷贝
 
+### 容器外拷贝到容器内
+
 `docker cp file containerID:dir`
 
 `docker cp realtime-clustering-xk c6de4af75ec4:/realtime-clustering/`
+
+### 容器内拷贝到容器外
+
+docker cp 容器id:容器中的路径 容器外的路径
+
+docker cp aa547e37a647:/etc/nginx/ /root/docker_nginx/
 
 ## 容器无法访问宿主机mysql
 
@@ -63,3 +71,11 @@ endpoint 一定不能是127.0.01:3306呀！！！！！
         "UseSSL": false
     }
 ```
+
+INFO[0186] snapshot <test/SNAP-CLUSTER-rc-0-0000000000210635-snapshot> commit to s3 Successfully
+INFO[0186] delete local snapshot <test/SNAP-CLUSTER-rc-0-0000000000210635-snapshot.tmp>
+INFO[0186] persist face-subcenter-pool snapshot path: test/SNAP-FSCT-rc-0-0000000000210635-snapshot.tmp
+INFO[0186] persist body-subcenter-pool snapshot path: test/SNAP-BSCT-rc-0-0000000000210635-snapshot.tmp
+INFO[0186] write snapshot into local file test/SNAP-FSCT-rc-0-0000000000210635-snapshot.tmp
+INFO[0186] write snapshot into local file test/SNAP-BSCT-rc-0-0000000000210635-snapshot.tmp
+DEBU[0187] send ReportTaskStatus request, got response: task_info:<id:"6227c0d2-9fbd-4de1-a85a-1c73d8d230fb" >

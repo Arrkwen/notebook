@@ -658,7 +658,7 @@ func (c *timerCtx) cancel(removeFromParent bool, err error) {
 
 ## [context使用不当引发的一个bug](https://mp.weixin.qq.com/s?__biz=MzkyNzI1NzM5NQ==&mid=2247484788&idx=1&sn=5789c87d1f90fbdfa7f6201689567edf&scene=21#wechat_redirect)
 
->  `contxt`误用导致的 `bug`，导致异步更新缓存都失败了，究竟是因为什么呢？看这样一个例子，光看代码，你能看出来有什么 `bug`吗？
+> `contxt`误用导致的 `bug`，导致异步更新缓存都失败了，究竟是因为什么呢？看这样一个例子，光看代码，你能看出来有什么 `bug`吗？
 
 ```go
 func AsyncAdd(run func() error)  {

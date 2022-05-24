@@ -32,7 +32,6 @@
 
 `window`: `win+y`, mac: `cmd+y`, linux: `win+y`
 
-
 ## 注释查看
 
 1 安装godoc

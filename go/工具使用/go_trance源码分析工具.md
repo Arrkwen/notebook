@@ -172,7 +172,7 @@ Usage of go-callvis:
 
 查看指定包，但是不能包含cgo的包，不支持。
 
-go-callvis -focus snapshot -limit gitlab.sz.sensetime.com/rtc/realtime-clustering -ignore gitlab.sz.sensetime.com/rtc/realtime-clustering/sego gitlab.sz.sensetime.com/rtc/realtime-clustering/cmd/realtime-clustering
+go-callvis -focus snapshot -limit gitlab.sz.sensetime.com/rtc/realtime-clustering gitlab.sz.sensetime.com/rtc/realtime-clustering/cmd/realtime-clustering -ignore gitlab.sz.sensetime.com/rtc/realtime-clustering/sego
 
 ### 3 查看
 
