@@ -90,3 +90,23 @@ pull_policy = "if-not-present"
 [官网](https://docs.gitlab.com/ee/ci/yaml/)
 
 [菜鸟教程](http://www.ttlsa.com/auto/gitlab-cicd-gitlab-ci-yml-configuration-tasks-detailed/)
+
+## Docker-excuter启动image的参数
+
+如果在注册excuter时选择了docker模式，所以在runner以 docker run -it ${参数} image:tag时，参数如何做到想在命令行中传递参数一样？
+
+答案就是 编辑config.toml，将要传递的参数，以key = val的形式添加到[runner.docker]下面：
+
+```
+[runners.docker]
+    tls_verify = false
+    image = "registry.sensetime.com/cstk/search_engine:ubuntu20.04-amd64-rocm22.10-0.6"
+    privileged = false
+    disable_entrypoint_overwrite = false
+    oom_kill_disable = false
+    disable_cache = false
+    volumes = ["/cache"]
+    shm_size = 0
+    network_mode = "host"
+
+```
