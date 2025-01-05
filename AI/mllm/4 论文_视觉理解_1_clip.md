@@ -16,8 +16,10 @@
 
 ## CLIP 关键代码分析
 
-## CLIP训练
+[参考code/clip](https://github.com/Arrkwen/notebook/tree/master/AI/mllm/code/clip)
 
-https://github.com/yunhao-tech/Course_project/blob/master/Advanced%20Machine%20learning/Final%20project_CLIP.ipynb
+## CLIP训练和微调
+
+[参考code/clip](https://github.com/Arrkwen/notebook/tree/master/AI/mllm/code/clip)
 
 ## CLIP 部署
