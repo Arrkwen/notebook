@@ -2,3 +2,6 @@ model
 data
 checkpoints
 *.pth
+__pycache__
+*.pyi
+AI/onnx/1proto/onnx
