@@ -1,0 +1,631 @@
+//
+// 警告：本文件为自动生成！请编辑 onnx.in.proto。
+//
+
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package onnx;
+
+// 概述
+//
+// ONNX 是一种开放规范，由以下组件构成：
+//
+// 1) 可扩展计算图模型的定义。
+// 2) 标准数据类型的定义。
+// 3) 内置算子的定义。
+//
+// 本文档描述模型及其计算图的语法，以及标准数据类型。它们统称为 ONNX
+// 中间表示（Intermediate Representation），简称 "IR"。
+//
+// ONNX IR 的规范性语义说明见 docs/IR.md。
+// 内置神经网络算子的定义见 docs/Operators.md。
+
+// 说明
+//
+// Protobuf 兼容性
+//
+// 为简化框架兼容性，ONNX 使用同时兼容 protobuf v2 和 v3 的 protobuf 子集定义。
+// 这意味着我们不使用仅在某一版本中可用的任何 protobuf 特性。
+//
+// 为规避这些限制，最值得注意的变通做法包括：
+//
+//   - 不使用 'map'（protobuf 3.0 新增）。我们改用键值对列表表示映射，
+//     其中顺序无关且不允许重复。
+
+// 版本
+//
+// ONNX 版本规范见 docs/IR.md，并在 docs/Versioning.md 中详述。
+//
+// 为兼容 proto2 和 proto3，我们使用非默认值而是显式枚举数字的版本号。
+enum Version {
+  // proto3 要求第一个枚举值为零。此处仅为满足编译器。
+  _START_VERSION = 0;
+  // version 字段始终被序列化，用于存储生成图所用的版本，便于版本控制。
+  // IR 使用从 0x00000001 开始的简单数字，即 2017 年 10 月 10 日发布的版本。
+  IR_VERSION_2017_10_10 = 0x0000000000000001;
+
+  // 2017 年 10 月 30 日发布的 IR_VERSION 2
+  // - 为 AttributeProto 增加类型判别器以支持 proto3 用户
+  IR_VERSION_2017_10_30 = 0x0000000000000002;
+
+  // 2017 年 11 月 3 日发布的 IR VERSION 3
+  // - 算子版本：新增 OperatorSetIdProto，在 ModelProto 中增加 opset_import
+  // - 厂商扩展：在 NodeProto 中增加 domain
+  IR_VERSION_2017_11_3 = 0x0000000000000003;
+
+  // 2019 年 1 月 22 日发布的 IR VERSION 4
+  // - 放宽 initializer 须为图输入子集的约束
+  // - 增加 BFLOAT16 类型
+  IR_VERSION_2019_1_22 = 0x0000000000000004;
+
+  // 2019 年 3 月 18 日发布的 IR VERSION 5
+  // - 新增 TensorAnnotation 消息。
+  // - 在 GraphProto 中增加量化注解，将张量与 scale、zero point 等量化参数关联。
+  IR_VERSION_2019_3_18 = 0x0000000000000005;
+
+  // 2019 年 9 月 19 日发布的 IR VERSION 6
+  // - 支持模型中存储的稀疏张量常量：新增 SparseTensorProto、sparse_initializers
+  IR_VERSION_2019_9_19 = 0x0000000000000006;
+
+  // 2020 年 5 月 8 日发布的 IR VERSION 7
+  // - 支持函数体图依赖多个外部算子集。
+  // - 增加列表，将推理图的 initializer 提升为全局可变变量；全局变量在存储模型的所有图中可见。
+  // - 新增 TrainingInfoProto 用于存储初始化方法与训练算法；执行 TrainingInfoProto 可修改可变变量的值。
+  // - 隐式将推理图加入每个 TrainingInfoProto 的 algorithm。
+  IR_VERSION_2020_5_8 = 0x0000000000000007;
+
+  // 2021 年 7 月 30 日发布的 IR VERSION 8
+  // 引入 TypeProto.SparseTensor、TypeProto.Optional
+  // 增加模型局部的 FunctionProto 列表
+  // FunctionProto 中弃用 since_version 与算子状态
+  IR_VERSION_2021_7_30 = 0x0000000000000008;
+
+  // 2023 年 5 月 5 日发布的 IR VERSION 9
+  // 在 FunctionProto 中增加 AttributeProto，以设置默认属性值。
+  // 增加 FLOAT8E4M3FN, FLOAT8E4M3FNUZ, FLOAT8E5M2, FLOAT8E5M2FNUZ。
+  IR_VERSION_2023_5_5 = 0x0000000000000009;
+
+  // 2024 年 3 月 25 日发布的 IR VERSION 10
+  // 增加 UINT4, INT4，函数的 overload 字段，以及多处 proto 定义的 metadata_props。
+  IR_VERSION_2024_3_25 = 0x000000000000000A;
+
+  // 2025 年 5 月 12 日发布的 IR VERSION 11
+  // 增加 FLOAT4E2M1、多设备 protobuf 类。
+  IR_VERSION_2025_05_12 = 0x000000000000000B;
+
+  // 2025 年 8 月 26 日发布的 IR VERSION 12
+  // 增加 FLOAT8E8M0。
+  IR_VERSION_2025_08_26 = 0x000000000000000C;
+
+  // 2025 年 11 月 6 日发布的 IR VERSION 13
+  // 增加 UINT2, INT2。
+  IR_VERSION = 0x000000000000000D;
+}
+
+// 属性
+//
+// 命名属性，可包含单值或重复的 float、integer、string、graph、tensor 等。
+// AttributeProto 必须包含 name 字段，且以下内容字段中只能有一个有效，相当于 C/C++ 的 union。
+message AttributeProto {
+  reserved 12, 16 to 19;
+  reserved "v";
+
+  // 此枚举与 schema.h 中 OpSchema::AttrType 结构一致；修改其一时通常需同步修改另一处。
+  enum AttributeType {
+    UNDEFINED = 0;
+    FLOAT = 1;
+    INT = 2;
+    STRING = 3;
+    TENSOR = 4;
+    GRAPH = 5;
+    SPARSE_TENSOR = 11;
+    TYPE_PROTO = 13;
+
+    FLOATS = 6;
+    INTS = 7;
+    STRINGS = 8;
+    TENSORS = 9;
+    GRAPHS = 10;
+    SPARSE_TENSORS = 12;
+    TYPE_PROTOS = 14;
+  }
+
+  // 当前 IR 版本中本字段必须存在。
+  string name = 1;           // 命名空间 Attribute
+
+  // 若 ref_attr_name 非空，则表示父函数中的属性名；此时本 AttributeProto 不包含数据，为父作用域属性的引用。
+  // 注意：仅用于函数（子图），在主图中使用无效。
+  string ref_attr_name = 21;
+
+  // 本属性的人类可读文档，允许 Markdown。
+  string doc_string = 13;
+
+  // 当前 IR 版本中 type 字段必须存在，且须与使用的 f|i|s|t|... 字段匹配（为兼容 proto3）。
+  AttributeType type = 20;   // 判别器，指示下面哪个字段在使用
+
+  // 当前 IR 版本中以下字段必须恰好存在一个
+  float f = 2;               // float
+  int64 i = 3;               // int
+  bytes s = 4;               // UTF-8 字符串
+  TensorProto t = 5;         // 张量值
+  GraphProto g = 6;          // 图
+  SparseTensorProto sparse_tensor = 22;  // 稀疏张量值
+  TypeProto tp = 14;          // 类型 proto
+
+  repeated float floats = 7;          // float 列表
+  repeated int64 ints = 8;            // int 列表
+  repeated bytes strings = 9;         // UTF-8 字符串列表
+  repeated TensorProto tensors = 10;  // 张量列表
+  repeated GraphProto graphs = 11;    // 图列表
+  repeated SparseTensorProto sparse_tensors = 23; // 稀疏张量列表
+  repeated TypeProto type_protos = 15;// 类型 proto 列表
+}
+
+// 定义值的相关信息：名称、类型与形状。
+message ValueInfoProto {
+  // 当前 IR 版本中本字段必须存在。
+  string name = 1;     // 命名空间 Value
+  // 顶层图的输入输出在本版本 IR 中必须提供本字段。
+  TypeProto type = 2;
+  // 本值的人类可读文档，允许 Markdown。
+  string doc_string = 3;
+  // 命名元数据键值对，键应互不相同。
+  repeated StringStringEntryProto metadata_props = 4;
+}
+
+// 节点
+//
+// 计算图由节点的 DAG 组成，节点对应机器学习框架中常说的“层”或“流水线阶段”。
+// 例如可为 "Conv" 类型节点：接收图像、滤波张量和偏置张量，输出卷积结果。
+message NodeProto {
+  repeated string input = 1;    // 命名空间 Value
+  repeated string output = 2;   // 命名空间 Value
+
+  // 图中本节点的可选标识。本版本 IR 中可省略。
+  string name = 3;     // 命名空间 Node
+
+  // 要执行的算子的符号标识。
+  string op_type = 4;  // 命名空间 Operator
+  // 指定 op_type 所命名算子的 OperatorSet 的域。
+  string domain = 7;   // 命名空间 Domain
+  // 重载标识，仅用于映射到模型局部函数。
+  string overload = 8;
+
+  // 其他命名属性。
+  repeated AttributeProto attribute = 5;
+
+  // 本节点的人类可读文档，允许 Markdown。
+  string doc_string = 6;
+
+  // 命名元数据键值对，键应互不相同。
+  repeated StringStringEntryProto metadata_props = 9;
+
+  // 多设备注解配置。
+  repeated NodeDeviceConfigurationProto device_configurations = 10;
+}
+
+// IntIntListEntryProto 遵循跨 proto 版本 map 的表示模式。
+message IntIntListEntryProto {
+  int64 key = 1;
+  repeated int64 value = 2;
+};
+
+// NodeProto 的多设备配置 proto。
+message NodeDeviceConfigurationProto {
+    // 当前 IR 版本中必须存在。配置 ID，须与某 DeviceConfigurationProto 的 name 匹配。
+    string configuration_id = 1;
+    // 节点的分片规格。
+    repeated ShardingSpecProto sharding_spec = 2;
+    // 本节点的流水线阶段。
+    int32 pipeline_stage = 3;
+}
+
+// ShardingSpecProto：描述节点某输入或输出张量的分片规格。
+message ShardingSpecProto {
+  // 当前 IR 版本中必须存在。标识被分片的节点输入或输出，须与节点 input/output 列表中的 ValueInfoProto 名称匹配（称为逻辑张量）。
+  string tensor_name = 1;
+
+  // 逻辑张量在其上分片或复制的设备列表。
+  repeated int64 device = 2;
+
+  // 上述 devices 中每个元素 v 可表示单设备或设备集合（当同一分片/张量需在设备子集上复制时），由下列可选 map 表示。
+  repeated IntIntListEntryProto index_to_device_group_map = 3;
+
+  // 张量的分片形状，由各轴的分片规格组成。
+  repeated ShardedDimProto sharded_dim = 4;
+}
+
+// ShardedDimProto：描述分片张量单轴的分片规格。
+message ShardedDimProto {
+  // 当前 IR 版本中必须存在。对应维度轴，须在 [-r, r-1] 范围内，r 为张量秩；负值表示从后往前数。
+  int64 axis = 1;
+
+  // 描述该轴上张量如何分片。常见情况由单个 SimpleShardedDimProto 描述；多个实例可用于分片张量 reshape、多轴融合等。
+  repeated SimpleShardedDimProto simple_sharding = 2;
+}
+
+// SimpleShardedDimProto：表示 N 个块划分为 M 个分片；N 可为符号，M 须为常量。
+message SimpleShardedDimProto {
+    // 待分片的维度值。
+    oneof dim {
+        int64 dim_value = 1;
+        string dim_param = 2;
+    }
+
+    // 当前 IR 版本中必须存在。将 dim 划分成的分片数。
+    int64 num_shards = 3;
+}
+
+// 训练信息
+// TrainingInfoProto 存储模型训练信息，主要定义两种功能：初始化步骤与训练算法步骤。
+// 初始化将模型恢复为未训练状态；训练算法根据输入数据更新模型。
+//
+// 初始化步骤语义：先按图中 initializer 初始化 ModelProto.graph 与 TrainingInfoProto.algorithm 的 initializer，
+// 再由 ModelProto.training_info 中每个实例的 "initialization_binding" 更新。
+//
+// "algorithm" 字段定义表示训练算法一步的计算图。执行 TrainingInfoProto.algorithm 后，
+// "update_binding" 指定的 initializer 可被立即更新。若目标训练算法包含连续更新步（如块坐标下降），
+// 用户需为每一步创建一个 TrainingInfoProto。
+message TrainingInfoProto {
+  // 描述训练开始时计算初始张量的图。初始化图无输入、可有多个输出。通常可训练张量随机初始化，
+  // 可在 TrainingInfoProto.initialization.node 中为每个张量放置 RandomNormal/RandomUniform 等算子，
+  // 并用 "initialization_binding" 将随机输出绑定到对应张量。此图也可设置同一 TrainingInfoProto 中 "algorithm" 的 initializer。
+  // 默认本字段为空图，求值不产生输出，故默认不改变任何 initializer。
+  GraphProto initialization = 1;
+
+  // 表示训练算法一步。给定所需输入，计算输出以更新其自身或推理图 initializer 列表中的 initializer。
+  // 通常包含 loss 节点、梯度节点、优化器节点、迭代计数递增等。
+  // 训练算法一步的执行通过执行“推理图（ModelProto.graph）与 algorithm 图组合”得到的图进行。
+  // 即训练图的 input/initializer/output/node/value_info/sparse_initializer 列表为上述两者的按序拼接。
+  // 默认本字段为空图，求值不产生输出，故默认不更新任何 initializer。
+  GraphProto algorithm = 2;
+
+  // 将 "initialization" 的输出绑定到 ModelProto.graph.initializer 及本 TrainingInfoProto 的 algorithm.initializer 中的部分 initializer。默认为空。
+  repeated StringStringEntryProto initialization_binding = 3;
+
+  // 基于梯度的训练通常是迭代过程。一次梯度下降迭代中应用 x = x - r * g（x 为优化张量，r 为学习率，g 为 x 对所选 loss 的梯度）。
+  // 为避免在训练图中引入赋值，将更新拆为 y = x - r * g 与 x = y。用户需将 "y = x - r * g" 存入 TrainingInfoProto.algorithm，
+  // 并通过 "update_binding" 的字符串键值对（StringStringEntryProto 的 key 为 "x"，value 为 "y"）表示 y 应赋给 x。
+  // 作为 "update_binding" 键出现的 initializer 视为可变变量，其行为包括：所有 update_binding 中键唯一；键须出现在
+  // ModelProto.graph.initializer 或 TrainingInfoProto.algorithm.initializer 的名称中；值须为 "algorithm" 或 ModelProto.graph.output 的输出名；
+  // 可变变量先按对应 initializer 初始化，再可能被 TrainingInfoProto 的 initializer_binding 与 update_binding 更新。
+  // 默认本字段为空。
+  repeated StringStringEntryProto update_binding = 4;
+}
+
+// 模型
+//
+// ModelProto 是打包 ML 模型并将计算图与元数据关联的顶层文件/容器格式。
+// 模型语义由关联的 GraphProto 描述。
+message ModelProto {
+  // 本模型目标的 IR 版本，见上方 Version 枚举。本字段必须存在。
+  int64 ir_version = 1;
+
+  // 本模型依赖的算子集。所有 ModelProto 至少须有一条指定所导入 ONNX OperatorSet 版本的条目。
+  // ModelProto 图中所有节点将绑定引用算子集中同 domain、同 op_type 且版本最高的算子。
+  repeated OperatorSetIdProto opset_import = 8;
+
+  // 生成本模型的框架或工具名称。建议提供以说明实现/工具/框架。
+  string producer_name = 2;
+
+  // 生成本模型的框架或工具版本。建议提供。
+  string producer_version = 3;
+
+  // 模型的域。使用反向域名作为命名空间，如 com.facebook.fair。与 model_version、GraphProto.name 一起构成图的唯一标识。
+  string domain = 4;
+
+  // 图的编码版本，见 Version 枚举。
+  int64 model_version = 5;
+
+  // 本模型的人类可读文档，允许 Markdown。
+  string doc_string = 6;
+
+  // 被执行以运行模型的参数化图。
+  GraphProto graph = 7;
+
+  // 命名元数据键值对，键应互不相同。
+  repeated StringStringEntryProto metadata_props = 14;
+
+  // 训练专用信息。顺序执行所有 TrainingInfoProto.algorithm 并按对应 TrainingInfoProto.update_binding 赋值即一次训练迭代。
+  // 类似地，初始化模型（如同未训练）需顺序执行所有 TrainingInfoProto.initialization 并用 TrainingInfoProto.initialization_binding 赋值。
+  // 若本字段为空，模型的训练行为未定义。
+  repeated TrainingInfoProto training_info = 20;
+
+  // 模型局部的函数 proto 列表。(domain, name, overload) 在本列表中须唯一；冲突时行为由运行时定义。
+  // FunctionProto 导入的算子集须与 ModelProto 及其他模型局部 FunctionProto 兼容。
+  // 一个 FunctionProto 可引用模型中其他 FunctionProto，但不允许递归引用。
+  repeated FunctionProto functions = 25;
+
+  // 多设备使用场景下的不同目标配置。一个模型可描述多种多设备执行配置。
+  repeated DeviceConfigurationProto configuration = 26;
+};
+
+// DeviceConfigurationProto 描述模型的多设备配置。
+message DeviceConfigurationProto {
+    // 当前 IR 版本中必须存在。配置名称。
+    string name = 1;
+    // 当前 IR 版本中必须存在。本配置中的设备数量。
+    int32 num_devices = 2;
+    // 可选的设备名称列表。若提供则长度须为 num_devices。
+    repeated string device = 3;
+}
+
+// 键值对，用于跨 proto 版本的 map 表示。
+message StringStringEntryProto {
+  string key = 1;
+  string value = 2;
+};
+
+// 张量注解：将张量与 scale、zero point 等量化参数张量关联。
+message TensorAnnotation {
+  string tensor_name = 1;
+  // 用于注解上述 tensor_name 指定张量的 <key, value> 对；键须在 ONNX 规范中预定义。
+  repeated StringStringEntryProto quant_parameter_tensor_names = 2;
+}
+
+// 图
+//
+// 图定义模型的计算逻辑，由参数化的节点列表组成，按输入输出形成有向无环图。
+// 相当于多数深度学习框架中的“网络”或“图”。
+message GraphProto {
+  // 图中的节点，按拓扑序排列。
+  repeated NodeProto node = 1;
+
+  // 图的名称。命名空间 Graph
+  string name = 2;
+
+  // 命名张量值列表，用于指定图的常量输入。每个 initializer（TensorProto 与 SparseTensorProto）必须有 name；
+  // name 在 initializer 与 sparse_initializer 中须唯一，但可同时出现在 input 列表中。
+  repeated TensorProto initializer = 5;
+
+  // 以稀疏格式存储的 initializer。
+  repeated SparseTensorProto sparse_initializer = 15;
+
+  // 本图的人类可读文档，允许 Markdown。
+  string doc_string = 10;
+
+  // 图的输入与输出。
+  repeated ValueInfoProto input = 11;
+  repeated ValueInfoProto output = 12;
+
+  // 图中值的信息。ValueInfoProto.name 须互不相同。值可不出现在 value_info 列表中。
+  repeated ValueInfoProto value_info = 13;
+
+  // 张量与其量化参数张量（如 scale、zero_point）的映射。例如张量 'a' 可有 {'SCALE_TENSOR','a_scale'} 与 {'ZERO_POINT_TENSOR','a_zero_point'}。
+  repeated TensorAnnotation quantization_annotation = 14;
+
+  // 命名元数据键值对，键应互不相同。
+  repeated StringStringEntryProto metadata_props = 16;
+
+  reserved 3, 4, 6 to 9;
+  reserved "ir_version", "producer_version", "producer_tag", "domain";
+}
+
+// 张量
+//
+// 序列化后的张量值。
+message TensorProto {
+  enum DataType {
+    UNDEFINED = 0;
+    FLOAT = 1;   // float
+    UINT8 = 2;   // uint8_t
+    INT8 = 3;    // int8_t
+    UINT16 = 4;  // uint16_t
+    INT16 = 5;   // int16_t
+    INT32 = 6;   // int32_t
+    INT64 = 7;   // int64_t
+    STRING = 8;  // string
+    BOOL = 9;    // bool
+
+    // IEEE754 半精度浮点（16 位）：1 符号位、5 指数位、10 尾数位。
+    FLOAT16 = 10;
+
+    DOUBLE = 11;
+    UINT32 = 12;
+    UINT64 = 13;
+    COMPLEX64 = 14;     // 实部与虚部为 float32 的复数
+    COMPLEX128 = 15;    // 实部与虚部为 float64 的复数
+
+    // 基于 IEEE754 单精度截断到 16 位的非 IEEE 格式：1 符号位、8 指数位、7 尾数位。
+    BFLOAT16 = 16;
+
+    // 基于 FP8 论文的非 IEEE 8 位格式；支持 FP8 的算子包括 Cast、QuantizeLinear、DequantizeLinear 等。
+    FLOAT8E4M3FN = 17;    // 多用于系数，支持 nan，不支持 inf
+    FLOAT8E4M3FNUZ = 18;  // 多用于系数，支持 nan，不支持 inf，无负零
+    FLOAT8E5M2 = 19;      // 遵循 IEEE 754，支持 nan、inf，多用于梯度
+    FLOAT8E5M2FNUZ = 20;  // 遵循 IEEE 754，支持 nan，不支持 inf，多用于梯度，无负零
+
+    UINT4 = 21;  // [0, 15] 无符号整数
+    INT4 = 22;   // [-8, 7] 有符号整数，补码
+
+    FLOAT4E2M1 = 23;  // 4 位浮点
+
+    // E8M0 用作微缩放 (MX) 格式的 scale
+    FLOAT8E8M0 = 24;
+
+    UINT2 = 25; // [0, 3] 无符号
+    INT2 = 26;  // [-2, 1] 有符号，补码
+  }
+
+  // 张量形状。
+  repeated int64 dims = 1;
+
+  // 张量数据类型。本字段须为有效的 TensorProto.DataType。
+  int32 data_type = 2;
+
+  // 大张量可分块存储，以下字段指定当前 TensorProto 中存储的片段。
+  message Segment {
+    int64 begin = 1;
+    int64 end = 2;
+  }
+  Segment segment = 3;
+
+  // 张量内容须按行主序组织。根据 data_type，下面恰好一个以 _data 结尾的字段用于存储元素。
+
+  // float 与 complex64；complex64 编码为 float 数组，奇数位为实部，紧接着的偶数位为虚部。
+  repeated float float_data = 4 [packed = true];
+
+  // int32, uint8, int8, uint16, int16, uint4, int4, uint2, int2, bool, (b)float16, float8, float4 等。
+  // (b)float16 与 float8 须按位转为无符号整数再写入；uint4/int4/float4 每两个 4 位元素打包为一字节；uint2/int2 每四个 2 位元素打包为一字节。
+  repeated int32 int32_data = 5 [packed = true];
+
+  // 字符串。string_data 每个元素为 UTF-8 编码的 Unicode 字符串，无尾随 null、无前导 BOM。
+  repeated bytes string_data = 6;
+
+  // int64。
+  repeated int64 int64_data = 7 [packed = true];
+
+  // 张量的可选名称。命名空间 Value
+  string name = 8;
+
+  // 本张量的人类可读文档，允许 Markdown。
+  string doc_string = 12;
+
+  // 除 string 外，也可用本 raw_data 存储；元素须为固定宽度小端序；浮点须为 IEEE 754；复数为先实部后虚部的连续 FLOAT/DOUBLE。
+  bytes raw_data = 9;
+
+  // 也可将数据存于外部文件，用 external_data 的键值对描述位置。常用键："location"（必需）、"offset"、"length"、"checksum"。
+  repeated StringStringEntryProto external_data = 13;
+
+  // 数据位置：DEFAULT 表示在 proto 内；EXTERNAL 表示在 external_data 描述的外部位置。
+  enum DataLocation {
+    DEFAULT = 0;
+    EXTERNAL = 1;
+  }
+  DataLocation data_location = 14;
+
+  // double；complex128 编码方式同 complex64。
+  repeated double double_data = 10 [packed = true];
+
+  // uint64、uint32。
+  repeated uint64 uint64_data = 11 [packed = true];
+
+  // 命名元数据键值对，键应互不相同。
+  repeated StringStringEntryProto metadata_props = 16;
+}
+
+// 序列化后的稀疏张量。非默认值编码为形状 [NNZ] 的张量，默认值数值为 0、字符串为空。
+// indices 可为 [NNZ, rank] 的索引张量或 [NNZ] 的线性索引；dims 为底层稠密张量的形状。
+message SparseTensorProto {
+  TensorProto values = 1;
+  TensorProto indices = 2;
+  repeated int64 dims = 3;
+}
+
+// 张量形状定义。维度可为整数值或符号变量（表示未知维度）。
+message TensorShapeProto {
+  message Dimension {
+    oneof value {
+      int64 dim_value = 1;
+      string dim_param = 2;   // 命名空间 Shape
+    };
+    // 可选的标准记号，用于为张量维度赋予语义，确保运算作用于正确轴。
+    string denotation = 3;
+  };
+  repeated Dimension dim = 1;
+}
+
+// 类型
+//
+// 标准 ONNX 数据类型。
+message TypeProto {
+
+  message Tensor {
+    // 不得为 UNDEFINED，须为有效 TensorProto.DataType，本版本 IR 中必须存在。
+    int32 elem_type = 1;
+    TensorShapeProto shape = 2;
+  }
+
+  // repeated T
+  message Sequence {
+    // 序列每个元素的类型与可选形状。本版本 IR 中必须存在。
+    TypeProto elem_type = 1;
+  };
+
+  // map<K,V>
+  message Map {
+    // 须为有效 TensorProto.DataType，且为整型或 STRING。本版本 IR 中必须存在。
+    int32 key_type = 1;
+    TypeProto value_type = 2;
+  };
+
+  // Tensor、Sequence 或 Map 的包装。
+  message Optional {
+    // 被包装元素的类型与可选形状。本版本 IR 中必须存在。
+    TypeProto elem_type = 1;
+  };
+
+  message SparseTensor {
+    // 不得为 UNDEFINED，须为有效 TensorProto.DataType，本版本 IR 中必须存在。
+    int32 elem_type = 1;
+    TensorShapeProto shape = 2;
+  }
+
+  oneof value {
+    Tensor tensor_type = 1;        // 张量类型
+    Sequence sequence_type = 4;    // 序列类型
+    Map map_type = 5;              // 映射类型
+    Optional optional_type = 9;    // 可选类型
+    SparseTensor sparse_tensor_type = 8;  // 稀疏张量类型
+  }
+
+  // 可选的标准记号，表示整个类型的语义。
+  string denotation = 6;
+}
+
+// 算子集
+//
+// 算子集由 (domain, opset_version) 唯一标识。
+message OperatorSetIdProto {
+  // 算子集的域。空字符串或缺失表示 ONNX 规范定义的算子集。引用其他算子集时本字段必须存在。
+  string domain = 1;
+
+  // 算子集版本。本版本 IR 中必须存在。
+  int64 version = 2;
+}
+
+// 算子/函数状态。
+enum OperatorStatus {
+    EXPERIMENTAL = 0;
+    STABLE = 1;
+}
+
+// 函数 proto：类似 NodeProto 的 op_type 的函数名；(domain, name, overload) 为模型中 FunctionProto 的唯一标识。
+message FunctionProto {
+  string name = 1;
+
+  reserved 2, 3;
+  reserved "since_version", "status";
+
+  repeated string input = 4;
+  repeated string output = 5;
+
+  // 无默认值的函数属性参数。
+  repeated string attribute = 6;
+
+  // 有默认值的函数属性，用 AttributeProto 表示。一个函数属性要么在 attribute 要么在 attribute_proto 中，不能同时出现。
+  repeated AttributeProto attribute_proto = 11;
+
+  repeated NodeProto node = 7;
+  string doc_string = 8;
+
+  // 函数体（图）依赖的算子集。与 ModelProto 导入的算子集应兼容。
+  repeated OperatorSetIdProto opset_import = 9;
+
+  // 本函数所属的域。(domain, name, overload) 为模型中 FunctionProto 的唯一标识之一。
+  string domain = 10;
+
+  // 函数的重载标识。
+  string overload = 13;
+
+  // 函数中值的信息；名称须互不相同且为函数中的名称（含输入、输出、中间值）。可不出现在 value_info 中。
+  repeated ValueInfoProto value_info = 12;
+
+  // 命名元数据键值对，键应互不相同。
+  repeated StringStringEntryProto metadata_props = 14;
+}
+
+// 使用 protobuf-lite 时的优化选项
+option optimize_for = LITE_RUNTIME;
