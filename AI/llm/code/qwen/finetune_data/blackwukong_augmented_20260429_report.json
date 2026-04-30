@@ -1,0 +1,77 @@
+{
+  "total_samples": 403,
+  "task_distribution": {
+    "qa": 170,
+    "qa_variant": 120,
+    "judgment": 65,
+    "compare": 15,
+    "summary": 18,
+    "step_extraction": 15
+  },
+  "category_distribution": {
+    "achievements_and_lists": 27,
+    "story_flow": 121,
+    "systems_and_mechanics": 55,
+    "roles_and_bosses": 71,
+    "items_and_equipment": 59,
+    "basic_facts": 70
+  },
+  "answer_length_distribution": {
+    "short": 114,
+    "medium": 232,
+    "long": 57
+  },
+  "knowledge_units_count": 6,
+  "quality_checks": {
+    "max_consecutive_same_task": 50,
+    "max_consecutive_same_category": 3,
+    "unique_instruction_prefixes": 208,
+    "top_instruction_prefixes": [
+      [
+        "《黑神话：悟",
+        18
+      ],
+      [
+        "如果只看给定",
+        16
+      ],
+      [
+        "请直接回答：",
+        15
+      ],
+      [
+        "能不能简单说",
+        15
+      ],
+      [
+        "我有点记不清",
+        15
+      ],
+      [
+        "根据文档内容",
+        15
+      ],
+      [
+        "换个说法问一",
+        15
+      ],
+      [
+        "下面这句说法",
+        13
+      ],
+      [
+        "根据资料判断",
+        13
+      ],
+      [
+        "这句话和资料",
+        13
+      ]
+    ]
+  },
+  "notes": [
+    "所有样本答案均限制为给定原文可支持的内容。",
+    "增强集混合了问答、判断、对比、总结和步骤提取任务。",
+    "最终 JSONL 仅保留 instruction 和 output 两个字段，便于直接用于 SFT。"
+  ]
+}
